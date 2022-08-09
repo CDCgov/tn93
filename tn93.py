@@ -5,10 +5,10 @@
 
 """
 Title: tn93.py
-Description: Implementation of Takamura-Nei distance calculation for pair of HIV sequences
+Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Tue 09 Aug 2022 06:19:56 PM EDT
+Last Modified: Tue 09 Aug 2022 06:26:42 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
