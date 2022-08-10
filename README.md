@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 We're going to start with a function that we're going to call tn93_distance that takes three arguments - Sequence 1, Sequence 2, and matchMode
 
 We're also going to need some constants for the calculations. WHich?
