@@ -8,29 +8,39 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Wed 10 Aug 2022 01:38:43 PM EDT
+Last Modified: Fri 12 Aug 2022 01:58:21 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
+import copy
+import json
 import sys
-import math
 import logging
+import math
+from Bio import SeqIO
 
 
 def main(args):
-    seq1 = args[0]
-    seq2 = args[1]
-    match_mode = args[2]
-    logging.DEBUG(f'{len(seq1)} {len(seq2)} {match_mode}')
-    dist = tn93_distance(seq1, seq2, match_mode)
-    logging.ERROR(f'TN93 distance is {dist}')
+    fasta_file = args[0]
+    fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
+    match_mode = args[1]
+    final_distance = []
+    for i in range(len(fasta_sequences) - 1):
+        for j in range(i + 1, len(fasta_sequences)):
+            final_distance += [tn93_distance(fasta_sequences[i].name, fasta_sequences[j].name, match_mode)]
+    with open("py_skip_distance_comparison.json", 'w') as output_file:
+        json.dump(final_distance, output_file)
 
 
 def tn93_distance(seq1, seq2, match_mode):
-    pairwise_counts = get_counts(seq1, seq2, match_mode)
+    pairwise_counts = get_counts(str(seq1.seq), str(seq2.seq), match_mode)
+    logging.error(pairwise_counts[0])
+    logging.error(pairwise_counts[1])
+    logging.error(pairwise_counts[2])
+    logging.error(pairwise_counts[3])
     nucleotide_frequency = get_nucleotide_frequency(pairwise_counts)
     dist = get_distance(pairwise_counts, nucleotide_frequency)
-    return dist
+    return {"ID1": seq1.id, "ID2": seq2.id, "Distance": dist}
 
 
 def get_distance(pairwise_counts, nucleotide_frequency):
@@ -38,8 +48,9 @@ def get_distance(pairwise_counts, nucleotide_frequency):
     total_non_gap = 2 / sum(nucleotide_frequency)
     AG = (pairwise_counts[0][2] + pairwise_counts[2][0]) * total_non_gap
     CT = (pairwise_counts[1][3] + pairwise_counts[3][1]) * total_non_gap
-    matching = pairwise_counts[0][0] + pairwise_counts[1][1] + pairwise_counts[2][2] + pairwise_counts[3][3] * total_non_gap
+    matching = (pairwise_counts[0][0] + pairwise_counts[1][1] + pairwise_counts[2][2] + pairwise_counts[3][3]) * total_non_gap
     tv = 1 - (AG + CT + matching)
+    logging.error(f'AG={AG} CT={CT} matching={matching} tv={tv}')
     if 0 in nucleotide_frequency:
         AG = 1 - 2 * (AG + CT) - tv
         CT = 1 - 2 * tv
@@ -57,6 +68,7 @@ def get_distance(pairwise_counts, nucleotide_frequency):
         K1 = 2 * nucF[0] * nucF[2] / fR
         K2 = 2 * nucF[1] * nucF[3] / fY
         K3 = 2 * (fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY)
+        logging.error(f'auxd={auxd} fR={fR} fY={fY} K1={K1} K2={K2} K3={K3}')
         AG = 1 - AG / K1 - 0.5 * tv / fR
         CT = 1 - CT / K2 - 0.5 * tv / fY
         tv = 1 - 0.5 * tv / fY / fR
@@ -83,7 +95,7 @@ def get_counts(seq1, seq2, match_mode):
     elif match_mode == 'SKIP':
         pairwise_counts = get_counts_skip(seq1, seq2)
     else:
-        logging.ERROR(f'Match mode {match_mode} is not recognized')
+        logging.error(f'Match mode {match_mode} is not recognized')
         sys.exit(1)
     return pairwise_counts
 
@@ -113,7 +125,7 @@ def get_counts_resolve(seq1, seq2):
                         continue
                     for j in range(4):
                         if resolutions[nuc2][j]:
-                            pairwise_counts[c1][j] += resolutionsCount[nuc2]
+                            pairwise_counts[nuc1][j] += resolutionsCount[nuc2]
             elif nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
                 if resolutionsCount[nuc1] > 0:
                     if resolutions[nuc1][nuc2]:  # Resolve nuc1 to nuc2 if possible
@@ -212,17 +224,17 @@ def get_counts_gapmm(seq1, seq2):
                     if resolutionsCount[nuc2] > 0:
                         for j in range(4):
                             if resolutions[nuc2][j]:
-                                pairwise_counts[c1][j] += resolutionsCount[nuc2]
+                                pairwise_counts[nuc1][j] += resolutionsCount[nuc2]
                 elif nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
                     if resolutionsCount[nuc1] > 0:
                         for j in range(4):
                             if resolutions[nuc1][j]:
-                                pairwise_counts[j][nuc2] += resolutions[nuc1]
+                                pairwise_counts[j][nuc2] += resolutionsCount[nuc1]
                 else:  # Both nuc1 and nuc2 are ambiguous
                     norm = resolutionsCount[nuc1] * resolutionsCount[nuc2]
                     if norm > 0.0:
                         for j in range(4):
-                            if resolutionsCount[nuc1][j]:
+                            if resolutions[nuc1][j]:
                                 for k in range(4):
                                     if resolutions[nuc2][k]:
                                         pairwise_counts[j][k] += norm
@@ -230,6 +242,7 @@ def get_counts_gapmm(seq1, seq2):
 
 
 def get_counts_skip(seq1, seq2):
+    all_pairwise_count_arrays = {}  # This is for debugging the difference between impl
     map_character, resolutions, resolutionsCount = get_constants()
     length = min(len(seq1), len(seq2))
     pairwise_counts = [
@@ -241,11 +254,12 @@ def get_counts_skip(seq1, seq2):
             ]
     for p in range(length):
         nuc1 = map_character[ord(seq1[p])]
-        print(f'{seq1[p]} should be {ord(seq1[p])}, really is {nuc1}')
         nuc2 = map_character[ord(seq2[p])]
-        print(f'{seq2[p]} should be {ord(seq2[p])}, really is {nuc2}')
         if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
             pairwise_counts[nuc1][nuc2] += 1
+        all_pairwise_count_arrays[p] = copy.deepcopy(pairwise_counts)
+    with open("tn93_python_pairwise_counts.json", 'w') as py_json_file:
+        json.dump(all_pairwise_count_arrays, py_json_file)
     return pairwise_counts
 
 
