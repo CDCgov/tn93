@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Mon 15 Aug 2022 12:17:27 PM EDT
+Last Modified: Mon 15 Aug 2022 04:27:43 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -47,10 +47,6 @@ class TN93(object):
 
     def tn93_distance(self, seq1, seq2, match_mode):
         pairwise_counts = self.get_counts(str(seq1.seq), str(seq2.seq), match_mode)
-        logging.error(pairwise_counts[0])
-        logging.error(pairwise_counts[1])
-        logging.error(pairwise_counts[2])
-        logging.error(pairwise_counts[3])
         nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
         dist = self.get_distance(pairwise_counts, nucleotide_frequency)
         return {"ID1": seq1.id, "ID2": seq2.id, "Distance": dist}
@@ -67,7 +63,6 @@ class TN93(object):
             + pairwise_counts[3][3]
         ) * total_non_gap
         tv = 1 - (AG + CT + matching)
-        logging.error(f"AG={AG} CT={CT} matching={matching} tv={tv}")
         if 0 in nucleotide_frequency:
             AG = 1 - 2 * (AG + CT) - tv
             CT = 1 - 2 * tv
@@ -87,12 +82,11 @@ class TN93(object):
             K3 = 2 * (
                 fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY
             )
-            logging.error(f"auxd={auxd} fR={fR} fY={fY} K1={K1} K2={K2} K3={K3}")
             AG = 1 - AG / K1 - 0.5 * tv / fR
             CT = 1 - CT / K2 - 0.5 * tv / fY
             tv = 1 - 0.5 * tv / fY / fR
             dist = -K1 * math.log(AG) - K2 * math.log(CT) - K3 * math.log(tv)
-        return dist
+        return round(dist, 10)
 
     def get_nucleotide_frequency(self, pairwise_counts):
         nucleotide_frequency = [0, 0, 0, 0]
@@ -104,20 +98,19 @@ class TN93(object):
 
     def get_counts(self, seq1, seq2, match_mode):
         if match_mode == "RESOLVE":
-            pairwise_counts = get_counts_resolve(seq1, seq2)
+            pairwise_counts = self.get_counts_resolve(seq1, seq2)
         elif match_mode == "AVERAGE":
-            pairwise_counts = get_counts_average(seq1, seq2)
+            pairwise_counts = self.get_counts_average(seq1, seq2)
         elif match_mode == "GAPMM":
-            pairwise_counts = get_counts_gapmm(seq1, seq2)
+            pairwise_counts = self.get_counts_gapmm(seq1, seq2)
         elif match_mode == "SKIP":
-            pairwise_counts = get_counts_skip(seq1, seq2)
+            pairwise_counts = self.get_counts_skip(seq1, seq2)
         else:
             logging.error(f"Match mode {match_mode} is not recognized")
             sys.exit(1)
         return pairwise_counts
 
     def get_counts_resolve(self, seq1, seq2):
-        map_character, resolutions, resolutionsCount = get_constants()
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -127,36 +120,40 @@ class TN93(object):
             [0, 0, 0, 0],  # T
         ]
         for p in range(length):
-            nuc1 = map_character[ord(seq1[p])]
-            nuc2 = map_character[ord(seq2[p])]
+            nuc1 = self.map_character[ord(seq1[p])]
+            nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
                 pairwise_counts[nuc1][nuc2] += 1
             else:
                 if nuc1 == 17 and nuc2 == 17:
                     continue
                 elif nuc1 < 4:  # nuc1 is resolved, nuc2 is ambiguous
-                    if resolutionsCount[nuc2] > 0:
-                        if resolutions[nuc2][nuc1]:  # Resolve nuc2 to nuc1 if possible
+                    if self.resolutionsCount[nuc2] > 0:
+                        if self.resolutions[nuc2][
+                            nuc1
+                        ]:  # Resolve nuc2 to nuc1 if possible
                             pairwise_counts[nuc1][nuc1] += 1
                             continue
                         for j in range(4):
-                            if resolutions[nuc2][j]:
-                                pairwise_counts[nuc1][j] += resolutionsCount[nuc2]
+                            if self.resolutions[nuc2][j]:
+                                pairwise_counts[nuc1][j] += self.resolutionsCount[nuc2]
                 elif nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
-                    if resolutionsCount[nuc1] > 0:
-                        if resolutions[nuc1][nuc2]:  # Resolve nuc1 to nuc2 if possible
+                    if self.resolutionsCount[nuc1] > 0:
+                        if self.resolutions[nuc1][
+                            nuc2
+                        ]:  # Resolve nuc1 to nuc2 if possible
                             pairwise_counts[nuc2][nuc2] += 1
                             continue
                         for j in range(4):
-                            if resolutions[nuc1][j]:
-                                pairwise_counts[j][nuc2] += resolutionsCount[nuc1]
+                            if self.resolutions[nuc1][j]:
+                                pairwise_counts[j][nuc2] += self.resolutionsCount[nuc1]
                 else:  # Both nuc1 and nuc2 are ambiguous
-                    norm = resolutionsCount[nuc1] * resolutionsCount[nuc2]
+                    norm = self.resolutionsCount[nuc1] * self.resolutionsCount[nuc2]
                     if norm > 0.0:
                         matched_count = 0
                         positive_match = [False, False, False, False]
                         for j in range(4):
-                            if resolutions[nuc1][j] and resolutions[nuc2][j]:
+                            if self.resolutions[nuc1][j] and self.resolutions[nuc2][j]:
                                 matched_count += 1
                                 positive_match[j] = True
                         if matched_count > 0:
@@ -166,14 +163,13 @@ class TN93(object):
                                     pairwise_counts[j][j] += norm2
                             continue
                         for j in range(4):
-                            if resolutions[nuc1][j]:
+                            if self.resolutions[nuc1][j]:
                                 for k in range(4):
-                                    if resolutions[nuc2][k]:
+                                    if self.resolutions[nuc2][k]:
                                         pairwise_counts[j][k] += norm
         return pairwise_counts
 
     def get_counts_average(self, seq1, seq2):
-        map_character, resolutions, resolutionsCount = get_constants()
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -183,35 +179,34 @@ class TN93(object):
             [0, 0, 0, 0],  # T
         ]
         for p in range(length):
-            nuc1 = map_character[ord(seq1[p])]
-            nuc2 = map_character[ord(seq2[p])]
+            nuc1 = self.map_character[ord(seq1[p])]
+            nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
                 pairwise_counts[nuc1][nuc2] += 1
             else:
                 if nuc1 == 17 or nuc2 == 17:  # One or both sequences have a gap
                     continue
                 elif nuc1 < 4:  # nuc1 is resolved, nuc2 is ambiguous
-                    if resolutionsCount[nuc2] > 0:
+                    if self.resolutionsCount[nuc2] > 0:
                         for j in range(4):
-                            if resolutions[nuc2][j]:
-                                pairwise_counts[nuc1][j] += resolutionsCount[nuc2]
+                            if self.resolutions[nuc2][j]:
+                                pairwise_counts[nuc1][j] += self.resolutionsCount[nuc2]
                 elif nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
-                    if resolutionsCount[nuc1] > 0:
+                    if self.resolutionsCount[nuc1] > 0:
                         for j in range(4):
-                            if resolutions[nuc1][j]:
-                                pairwise_counts[j][nuc2] += resolutionsCount[nuc1]
+                            if self.resolutions[nuc1][j]:
+                                pairwise_counts[j][nuc2] += self.resolutionsCount[nuc1]
                 else:  # nuc1 and nuc2 are ambiguous
-                    norm = resolutionsCount[nuc1] * resolutionsCount[nuc2]
+                    norm = self.resolutionsCount[nuc1] * self.resolutionsCount[nuc2]
                     if norm > 0.0:
                         for j in range(4):
-                            if resolutions[nuc1][j]:
+                            if self.resolutions[nuc1][j]:
                                 for k in range(4):
-                                    if resolutions[nuc2][k]:
+                                    if self.resolutions[nuc2][k]:
                                         pairwise_counts[j][k] += norm
         return pairwise_counts
 
     def get_counts_gapmm(self, seq1, seq2):
-        map_character, resolutions, resolutionsCount = get_constants()
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -221,8 +216,8 @@ class TN93(object):
             [0, 0, 0, 0],  # T
         ]
         for p in range(length):
-            nuc1 = map_character[ord(seq1[p])]
-            nuc2 = map_character[ord(seq2[p])]
+            nuc1 = self.map_character[ord(seq1[p])]
+            nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
                 pairwise_counts[nuc1][nuc2] += 1
             else:
@@ -235,22 +230,26 @@ class TN93(object):
                         nuc2 = 15
                 else:
                     if nuc1 < 4:  # nuc1 is resolved, nuc2 ambiguous
-                        if resolutionsCount[nuc2] > 0:
+                        if self.resolutionsCount[nuc2] > 0:
                             for j in range(4):
-                                if resolutions[nuc2][j]:
-                                    pairwise_counts[nuc1][j] += resolutionsCount[nuc2]
+                                if self.resolutions[nuc2][j]:
+                                    pairwise_counts[nuc1][j] += self.resolutionsCount[
+                                        nuc2
+                                    ]
                     elif nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
-                        if resolutionsCount[nuc1] > 0:
+                        if self.resolutionsCount[nuc1] > 0:
                             for j in range(4):
-                                if resolutions[nuc1][j]:
-                                    pairwise_counts[j][nuc2] += resolutionsCount[nuc1]
+                                if self.resolutions[nuc1][j]:
+                                    pairwise_counts[j][nuc2] += self.resolutionsCount[
+                                        nuc1
+                                    ]
                     else:  # Both nuc1 and nuc2 are ambiguous
-                        norm = resolutionsCount[nuc1] * resolutionsCount[nuc2]
+                        norm = self.resolutionsCount[nuc1] * self.resolutionsCount[nuc2]
                         if norm > 0.0:
                             for j in range(4):
-                                if resolutions[nuc1][j]:
+                                if self.resolutions[nuc1][j]:
                                     for k in range(4):
-                                        if resolutions[nuc2][k]:
+                                        if self.resolutions[nuc2][k]:
                                             pairwise_counts[j][k] += norm
         return pairwise_counts
 
@@ -258,7 +257,6 @@ class TN93(object):
         all_pairwise_count_arrays = (
             {}
         )  # This is for debugging the difference between impl
-        map_character, resolutions, resolutionsCount = get_constants()
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -268,13 +266,11 @@ class TN93(object):
             [0, 0, 0, 0],  # T
         ]
         for p in range(length):
-            nuc1 = map_character[ord(seq1[p])]
-            nuc2 = map_character[ord(seq2[p])]
+            nuc1 = self.map_character[ord(seq1[p])]
+            nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
                 pairwise_counts[nuc1][nuc2] += 1
             all_pairwise_count_arrays[p] = copy.deepcopy(pairwise_counts)
-        with open("tn93_python_pairwise_counts.json", "w") as py_json_file:
-            json.dump(all_pairwise_count_arrays, py_json_file)
         return pairwise_counts
 
     def get_constants(self):
