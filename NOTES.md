@@ -15,14 +15,14 @@ Calculate the pairwise nucleotide counts for a sequence pair
 
  * Get the length of the shortest sequence
  * Step through each location in the sequence
-  ** Select the current nucleotide from each
-  ** If the nucleotides are unambiguous, add one to the appropriate pairwise_counts cell
-  ** If the nucleotides are ambiguous, resolve it according to match_mode
+     * Select the current nucleotide from each
+     * If the nucleotides are unambiguous, add one to the appropriate pairwise_counts cell
+     * If the nucleotides are ambiguous, resolve it according to match_mode
  * Calculate the distance from the pairwise_counts
-  ** Get observed nucleotide frequencies
-  ** Calculate the fraction of the sequence that is not gap
-  ** Get count of AG mismatches
-  ** Get count of CT mismatches
-  ** Calculate tv (don't know what it stands for)
-  ** If there are any nucleotides that don't appear there's a separate calculation for that
-  ** Otherwise do the longer calculation
+     * Get observed nucleotide frequencies
+     * Calculate the fraction of the sequence that is not gap
+     * Get count of AG mismatches
+     * Get count of CT mismatches
+     * Calculate tv (don't know what it stands for)
+     * If there are any nucleotides that don't appear there's a separate calculation for that
+     * Otherwise do the longer calculation
