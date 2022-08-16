@@ -35,7 +35,7 @@ There are four distinct match modes:
 
 * SKIP, which ignores ambiguous positions
 * GAPMM, which treats gaps appearing in only one sequence as mismatches
-* RESOLVE, which tries to assign a specific nucleotide to the ambiguity
+* RESOLVE, which tries to resolve the ambiguity to a single nucleotide, averages if that fails
 * AVERAGE, which takes the average of the possible resolution values
 
 ## Related documents
