@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "tn93"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
   { name="Reagan Kelly", email="ylb9@cdc.gov" },
 ]
@@ -18,5 +18,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/CDCgov/tn93.py"
-"Bug Tracker" = "https://github.com/CDCgov/tn93.py/issues"
+"Homepage" = "https://github.com/CDCgov/tn93"
+"Bug Tracker" = "https://github.com/CDCgov/tn93/issues"

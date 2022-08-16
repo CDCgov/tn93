@@ -1,8 +1,8 @@
-# CDCgov GitHub Organization Open Source Project Template
+# Tamura-Nei Distance Calculation with Python
 
 ## Overview
 
-This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation for HIV sequences. When provided with two HIV sequences to compare, this software returns a distance value between 0 and 1. See [NOTES](NOTES.md) for more information on the algorithm
+This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation for HIV sequences. When provided with two HIV sequences to compare, this software returns a distance value between 0 and 1. See [NOTES](https://github.CDCgov/tn93/NOTES.md) for more information on the algorithm
 
 ## Usage
 
