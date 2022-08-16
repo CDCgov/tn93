@@ -8,11 +8,12 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Mon 15 Aug 2022 04:27:43 PM EDT
+Last Modified: Tue 16 Aug 2022 03:06:19 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
 import copy
+import argparse
 import json
 import sys
 import logging
@@ -21,20 +22,28 @@ from Bio import SeqIO
 
 
 def main(args):
+    parser = setup_parser()
+    args = parser.parse_args(args)
     tn93 = TN93()
-    fasta_file = args[0]
+    fasta_file = args.input_file
     fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
-    match_mode = args[1]
+    match_mode = args.match_mode
     final_distance = []
     for i in range(len(fasta_sequences) - 1):
         for j in range(i + 1, len(fasta_sequences)):
             final_distance += [
-                tn93.tn93_distance(
-                    fasta_sequences[i].name, fasta_sequences[j].name, match_mode
-                )
+                tn93.tn93_distance(fasta_sequences[i], fasta_sequences[j], match_mode)
             ]
-    with open("py_skip_distance_comparison.json", "w") as output_file:
+    with open(args.output, "w") as output_file:
         json.dump(final_distance, output_file)
+
+
+def setup_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input_file", action="store")
+    parser.add_argument("-m", "--match_mode", action="store")
+    parser.add_argument("-o", "--output", action="store")
+    return parser
 
 
 class TN93(object):
@@ -46,7 +55,10 @@ class TN93(object):
         ) = self.get_constants()
 
     def tn93_distance(self, seq1, seq2, match_mode):
-        pairwise_counts = self.get_counts(str(seq1.seq), str(seq2.seq), match_mode)
+        try:  # If sequences are passed as SeqRecord objects
+            pairwise_counts = self.get_counts(str(seq1.seq), str(seq2.seq), match_mode)
+        except AttributeError:  # If sequences are passed as strings
+            pairwise_counts = self.get_counts(seq1, seq2, match_mode)
         nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
         dist = self.get_distance(pairwise_counts, nucleotide_frequency)
         return {"ID1": seq1.id, "ID2": seq2.id, "Distance": dist}

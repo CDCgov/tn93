@@ -1,22 +1,13 @@
-## We're going to start with a function that we're going to call tn93_distance that takes three arguments - Sequence 1, Sequence 2, and matchMode
+# Calculating the Tamura-Nei distance for a pair of HIV sequences
 
-## We're also going to need some constants for the calculations. WHich?
+Calculating the Tamura-Nei (TN93) distance requires a pair of aligned sequences. Step through the sequence and for each position identify the nucelotide in sequence #1 and the nucleotide in sequence #2 and increment the cell in the pairwise_counts matrix that corresponds to those two nucleotides.
 
- * mapChar - an array with values for each nucleotide (incl ambiguities), the numbers are their order in the resolutions array
- * resolutions - two-dimensional array, the number retrieved from mapChar is the index for the first dimension of this array
- * resolutionsCount - an array with decimal values for the certainty associated with the resolution
+The algorithm also requires a "match mode" that specifies how any ambiguous nucleotides that are encountered are handled.
 
-## For the distance calculation, the difference is in the matchMode.
-
- * SKIP is super simple - if they're both unambiguous then add 1 to the appropriate slot in pairwiseCounts
- * GAPMM looks like it turns gaps that are in only one of the two sequencesinto "N"s
- * RESOLVE counts selects the match if possible, averages otherwise
- * AVERAGE just always takes the average of the values
-
-## Critical variables:
-
- * dist (the tn93 distance)
- * pairwiseCounts (the values used to calculate the distance)
+* SKIP ignores any ambiguous nucelotides
+* GAPMM treats gaps appearing in only one sequence as mismatches
+* RESOLVE resolves the ambiguity if possible, averages possible values otherwise
+* AVERAGE takes the average of possible values
 
 ## Algorithm:
 
@@ -24,8 +15,10 @@ Calculate the pairwise nucleotide counts for a sequence pair
 
  * Get the length of the shortest sequence
  * Step through each location in the sequence
- * Update pairwiseCounts for these two nucleotides
- * Calculate the distance from the pairwiseCounts
+  * Select the current nucleotide from each
+  * If the nucleotides are unambiguous, add one to the appropriate pairwise_counts cell
+  * If the nucleotides are ambiguous, resolve it according to match_mode
+ * Calculate the distance from the pairwise_counts
   * Get observed nucleotide frequencies
   * Calculate the fraction of the sequence that is not gap
   * Get count of AG mismatches

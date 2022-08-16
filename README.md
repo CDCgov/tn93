@@ -28,8 +28,15 @@ distance = tn93.tn93_distance(seqs[0], seqs[1], "RESOLVE")
 Alternatively, the module can be run from the command line and provided with a sequence file and match mode to produce a JSON file with the pairwise distances.
 
 ```bash
-python tn93.py --input-file example_seqs.fasta --match-mode RESOLVE --output example_seqs_resolve_distance.json
+python tn93.py --input_file example_seqs.fasta --match_mode RESOLVE --output example_seqs_resolve_distance.json
 ```
+
+There are four distinct match modes:
+
+* SKIP, which ignores ambiguous positions
+* GAPMM, which treats gaps appearing in only one sequence as mismatches
+* RESOLVE, which tries to assign a specific nucleotide to the ambiguity
+* AVERAGE, which takes the average of the possible resolution values
 
 ## Related documents
 
