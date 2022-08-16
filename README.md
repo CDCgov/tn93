@@ -14,7 +14,7 @@ First, install using pip
 pip install tn93
 ```
 
-or clone this respository and copy `src/tn93.py` to your working directory. To calculate the distance between a pair of sequences,
+or clone this respository and copy `src/tn93/tn93.py` to your working directory. To calculate the distance between a pair of sequences,
 
 ```python
 from Bio import SeqIO
