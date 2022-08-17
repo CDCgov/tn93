@@ -1,10 +1,10 @@
 {
-"ambig_skip":    0.0741946704,
-"ambig_gapmm":   0.0768569889,
-"ambig_average": 0.0768569889,
-"ambig_resolve": 0.0737701371,
-"unambig_skip": 0.1034539634,
-"unambig_gapmm": 0.1078006640,
-"unambig_average": 0.1078006640,
-"unambig_resolve": 0.1024370524
+"ambig_skip":    0.0108767238,
+"ambig_gapmm":   0.0156093033,
+"ambig_average": 0.0156093033,
+"ambig_resolve": 0.0114789092,
+"unambig_skip": 0.0108030008,
+"unambig_gapmm": 0.0108030008,
+"unambig_average": 0.0108030008,
+"unambig_resolve": 0.0108030008
 }

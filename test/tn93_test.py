@@ -8,21 +8,24 @@ Title:test_tn93.py
 Description:
 Usage:
 Date Created: 2022-08-15 11:43
-Last Modified: Mon 15 Aug 2022 04:30:23 PM EDT
+Last Modified: Wed 17 Aug 2022 11:08:08 AM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
 import unittest
 import json
+import sys
 from unittest.mock import Mock
-import tn93
 from Bio import SeqIO
+
+sys.path.append("..")
+from src.tn93 import tn93
 
 
 class TestTN93(unittest.TestCase):
     def setUp(self):
         self.test_seqs = {
-            x.id: x for x in SeqIO.parse("test/test_sequences.fasta", format="fasta")
+            x.id: x for x in SeqIO.parse("test/example_sequences.fasta", format="fasta")
         }
         self.tn93 = tn93.TN93()
         with open("test/expected_counts.json", "r") as json_file:
@@ -127,7 +130,7 @@ class TestTN93(unittest.TestCase):
 
     def test_get_nucleotide_frequency(self):
         nuc_freq = self.tn93.get_nucleotide_frequency(self.counts["unambig_resolve"])
-        self.assertEqual(nuc_freq, [740.5, 262.0, 377.0, 438.5])
+        self.assertEqual(nuc_freq, [1210, 492, 626, 666])
 
     def test_get_distance_ambig_skip(self):
         pairwise = self.tn93.get_counts_skip(
