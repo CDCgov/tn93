@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Tue 16 Aug 2022 03:06:19 PM EDT
+Last Modified: Wed 17 Aug 2022 03:36:20 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -32,7 +32,13 @@ def main(args):
     for i in range(len(fasta_sequences) - 1):
         for j in range(i + 1, len(fasta_sequences)):
             final_distance += [
-                tn93.tn93_distance(fasta_sequences[i], fasta_sequences[j], match_mode)
+                {
+                    "ID1": fasta_sequences[i].id,
+                    "ID2": fasta_sequences[j].id,
+                    "Distance": tn93.tn93_distance(
+                        fasta_sequences[i], fasta_sequences[j], match_mode
+                    ),
+                }
             ]
     with open(args.output, "w") as output_file:
         json.dump(final_distance, output_file)
@@ -40,9 +46,9 @@ def main(args):
 
 def setup_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_file", action="store")
-    parser.add_argument("-m", "--match_mode", action="store")
-    parser.add_argument("-o", "--output", action="store")
+    parser.add_argument("-i", "--input_file", action="store", required=True)
+    parser.add_argument("-m", "--match_mode", action="store", required=True)
+    parser.add_argument("-o", "--output", action="store", required=True)
     return parser
 
 
@@ -61,7 +67,7 @@ class TN93(object):
             pairwise_counts = self.get_counts(seq1, seq2, match_mode)
         nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
         dist = self.get_distance(pairwise_counts, nucleotide_frequency)
-        return {"ID1": seq1.id, "ID2": seq2.id, "Distance": dist}
+        return dist
 
     def get_distance(self, pairwise_counts, nucleotide_frequency):
         dist = 0
