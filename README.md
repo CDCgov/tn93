@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation for HIV sequences. When provided with two HIV sequences to compare, this software returns a distance value between 0 and 1. See [NOTES](https://github.com/CDCgov/tn93/NOTES.md) for more information on the algorithm
+This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation. When provided with two sequences to compare, this software returns a distance value between 0 and 1 using the Tamura-Nei nucleotide substitution model. See  [Estimation of the number of nucleotide substitutions in the control region of mitochondrial DNA in humans and chimpanzees](https://pubmed.ncbi.nlm.nih.gov/8336541/) and [NOTES](https://github.com/CDCgov/tn93/blob/main/NOTES.md) for more information on the algorithm.
 
 ## Usage
 
@@ -35,8 +35,8 @@ There are four distinct match modes:
 
 * SKIP, which ignores ambiguous positions
 * GAPMM, which treats gaps appearing in only one sequence as mismatches
-* RESOLVE, which tries to resolve the ambiguity to a single nucleotide, averages if that fails
 * AVERAGE, which takes the average of the possible resolution values
+* RESOLVE, which tries to resolve the ambiguity to a single nucleotide, averages if that fails
 
 ## Related documents
 
