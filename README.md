@@ -4,7 +4,7 @@
 
 ## Overview
 
-This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation. When provided with two sequences to compare, this software returns a distance value between 0 and 1 using the Tamura-Nei nucleotide substitution model. See  [Estimation of the number of nucleotide substitutions in the control region of mitochondrial DNA in humans and chimpanzees](https://pubmed.ncbi.nlm.nih.gov/8336541/) and [NOTES](https://github.com/CDCgov/tn93/blob/main/NOTES.md) for more information on the algorithm.
+This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation. When provided with two sequences to compare, this software returns a distance value between 0 and 1 using the Tamura-Nei nucleotide substitution model. See  [Estimation of the number of nucleotide substitutions in the control region of mitochondrial DNA in humans and chimpanzees](https://pubmed.ncbi.nlm.nih.gov/8336541/) and [NOTES](https://github.com/CDCgov/tn93/blob/main/NOTES.md) for more information on the algorithm. This software has been developed by the Molecular Epidemiology and Bioinformatics Team in the Division of HIV/AIDS Prevention, NCHHSTP.
 
 ## Usage
 
