@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Wed 17 Aug 2022 03:36:20 PM EDT
+Last Modified: Wed 24 Aug 2022 04:45:16 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -19,12 +19,13 @@ import sys
 import logging
 import math
 from Bio import SeqIO
+import numpy as np
 
 
 def main(args):
     parser = setup_parser()
     args = parser.parse_args(args)
-    tn93 = TN93()
+    tn93 = TN93(show_counts=args.show_counts)
     fasta_file = args.input_file
     fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
     match_mode = args.match_mode
@@ -49,16 +50,18 @@ def setup_parser():
     parser.add_argument("-i", "--input_file", action="store", required=True)
     parser.add_argument("-m", "--match_mode", action="store", required=True)
     parser.add_argument("-o", "--output", action="store", required=True)
+    parser.add_argument("-c", "--show_counts", action="store_true", default=False)
     return parser
 
 
 class TN93(object):
-    def __init__(self):
+    def __init__(self, show_counts=False):
         (
             self.map_character,
             self.resolutions,
             self.resolutionsCount,
         ) = self.get_constants()
+        self.show_counts = show_counts
 
     def tn93_distance(self, seq1, seq2, match_mode):
         try:  # If sequences are passed as SeqRecord objects
@@ -67,20 +70,32 @@ class TN93(object):
             pairwise_counts = self.get_counts(seq1, seq2, match_mode)
         nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
         dist = self.get_distance(pairwise_counts, nucleotide_frequency)
+        if self.show_counts:
+            logging.error(dist)
         return dist
 
     def get_distance(self, pairwise_counts, nucleotide_frequency):
+        if self.show_counts:
+            logging.error(pairwise_counts[0])
+            logging.error(pairwise_counts[1])
+            logging.error(pairwise_counts[2])
+            logging.error(pairwise_counts[3])
+            logging.error(nucleotide_frequency)
         dist = 0
-        total_non_gap = 2 / sum(nucleotide_frequency)
-        AG = (pairwise_counts[0][2] + pairwise_counts[2][0]) * total_non_gap
-        CT = (pairwise_counts[1][3] + pairwise_counts[3][1]) * total_non_gap
+        total_non_gap = self.round(2 / sum(nucleotide_frequency))
+        AG_counts = float(pairwise_counts[0][2] + pairwise_counts[2][0])
+        AG = self.round(AG_counts * total_non_gap)
+        CT_counts = float(pairwise_counts[1][3] + pairwise_counts[3][1])
+        CT = self.round(CT_counts * total_non_gap)
         matching = (
             pairwise_counts[0][0]
             + pairwise_counts[1][1]
             + pairwise_counts[2][2]
             + pairwise_counts[3][3]
         ) * total_non_gap
-        tv = 1 - (AG + CT + matching)
+        tv = self.round(1 - (AG + CT + matching))
+        if self.show_counts:
+            logging.error(f"Initially: AG={AG} CT={CT} tv={tv}")
         if 0 in nucleotide_frequency:
             AG = 1 - 2 * (AG + CT) - tv
             CT = 1 - 2 * tv
@@ -89,22 +104,32 @@ class TN93(object):
             else:
                 dist = 1.0
         else:
-            auxd = 1 / sum(nucleotide_frequency)
+            auxd = self.round(1 / sum(nucleotide_frequency))
             nucF = [0, 0, 0, 0]
             for j in range(4):
-                nucF[j] = nucleotide_frequency[j] * auxd
-            fR = nucF[0] + nucF[2]
-            fY = nucF[1] + nucF[3]
-            K1 = 2 * nucF[0] * nucF[2] / fR
-            K2 = 2 * nucF[1] * nucF[3] / fY
-            K3 = 2 * (
-                fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY
+                nucF[j] = float(nucleotide_frequency[j]) * auxd
+            fR = self.round(nucF[0] + nucF[2])
+            fY = self.round(nucF[1] + nucF[3])
+            K1 = self.round(2 * nucF[0] * nucF[2] / fR)
+            K2 = self.round(2 * nucF[1] * nucF[3] / fY)
+            K3 = self.round(
+                2
+                * (fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY)
             )
-            AG = 1 - AG / K1 - 0.5 * tv / fR
-            CT = 1 - CT / K2 - 0.5 * tv / fY
-            tv = 1 - 0.5 * tv / fY / fR
-            dist = -K1 * math.log(AG) - K2 * math.log(CT) - K3 * math.log(tv)
-        return round(dist, 10)
+            AG = self.round(1 - AG / K1 - 0.5 * tv / fR)
+            CT = self.round(1 - CT / K2 - 0.5 * tv / fY)
+            tv = self.round(1 - 0.5 * tv / fY / fR)
+            dist = self.round(
+                -K1 * math.log(AG) - K2 * math.log(CT) - K3 * math.log(tv)
+            )
+
+        if self.show_counts:
+            logging.error(
+                f"Finally: auxd={auxd} fR={fR} fY={fY} K1={K1} K2={K2} K3={K3} AG={AG} CT={CT} tv={tv}"
+            )
+            logging.error(f"dist={dist}")
+
+        return self.round(dist) if dist > -0.0 else 0.0  # If it's really -0.0 return 0
 
     def get_nucleotide_frequency(self, pairwise_counts):
         nucleotide_frequency = [0, 0, 0, 0]
@@ -127,6 +152,12 @@ class TN93(object):
             logging.error(f"Match mode {match_mode} is not recognized")
             sys.exit(1)
         return pairwise_counts
+
+    def round(self, number):
+        val = np.format_float_positional(
+            number, precision=4, unique=False, fractional=False, trim="k"
+        )
+        return float(val)
 
     def get_counts_resolve(self, seq1, seq2):
         length = min(len(seq1), len(seq2))
@@ -242,19 +273,18 @@ class TN93(object):
                 if nuc1 == 17 or nuc2 == 17:  # One or both sequences have a gap
                     if nuc1 == 17 and nuc2 == 17:  # Both sequences have a gap
                         continue
-                    elif nuc1 == 17:
-                        nuc1 = 15
                     else:
-                        nuc2 = 15
+                        if nuc1 == 17:
+                            nuc1 = 15
+                        else:
+                            nuc2 = 15
+                if nuc1 < 4:  # nuc1 is resolved, nuc2 ambiguous
+                    if self.resolutionsCount[nuc2] > 0:
+                        for j in range(4):
+                            if self.resolutions[nuc2][j]:
+                                pairwise_counts[nuc1][j] += self.resolutionsCount[nuc2]
                 else:
-                    if nuc1 < 4:  # nuc1 is resolved, nuc2 ambiguous
-                        if self.resolutionsCount[nuc2] > 0:
-                            for j in range(4):
-                                if self.resolutions[nuc2][j]:
-                                    pairwise_counts[nuc1][j] += self.resolutionsCount[
-                                        nuc2
-                                    ]
-                    elif nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
+                    if nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
                         if self.resolutionsCount[nuc1] > 0:
                             for j in range(4):
                                 if self.resolutions[nuc1][j]:
