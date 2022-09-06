@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Tue 06 Sep 2022 04:46:51 PM EDT
+Last Modified: Tue 06 Sep 2022 06:39:36 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -100,18 +100,18 @@ class TN93(object):
             logging.error(nucleotide_frequency)
             logging.error(sum([sum(x) for x in pairwise_counts]))
         dist = 0
-        total_non_gap = self.round(2 / sum(nucleotide_frequency))
+        total_non_gap = 2 / sum(nucleotide_frequency)
         AG_counts = float(pairwise_counts[0][2] + pairwise_counts[2][0])
-        AG = self.round(AG_counts * total_non_gap)
+        AG = AG_counts * total_non_gap
         CT_counts = float(pairwise_counts[1][3] + pairwise_counts[3][1])
-        CT = self.round(CT_counts * total_non_gap)
+        CT = CT_counts * total_non_gap
         matching = (
             pairwise_counts[0][0]
             + pairwise_counts[1][1]
             + pairwise_counts[2][2]
             + pairwise_counts[3][3]
         ) * total_non_gap
-        tv = self.round(1 - (AG + CT + matching))
+        tv = 1 - (AG + CT + matching)
         if self.show_counts:
             logging.error(f"Initially: AG={AG} CT={CT} tv={tv}")
         if 0 in nucleotide_frequency:
@@ -122,21 +122,20 @@ class TN93(object):
             else:
                 dist = 1.0
         else:
-            auxd = self.round(1 / sum(nucleotide_frequency))
+            auxd = 1 / sum(nucleotide_frequency)
             nucF = [0, 0, 0, 0]
             for j in range(4):
                 nucF[j] = float(nucleotide_frequency[j]) * auxd
-            fR = self.round(nucF[0] + nucF[2])
-            fY = self.round(nucF[1] + nucF[3])
-            K1 = self.round(2 * nucF[0] * nucF[2] / fR)
-            K2 = self.round(2 * nucF[1] * nucF[3] / fY)
-            K3 = self.round(
-                2
-                * (fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY)
+            fR = nucF[0] + nucF[2]
+            fY = nucF[1] + nucF[3]
+            K1 = 2 * nucF[0] * nucF[2] / fR
+            K2 = 2 * nucF[1] * nucF[3] / fY
+            K3 = 2 * (
+                fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY
             )
-            AG = self.round(1 - AG / K1 - 0.5 * tv / fR)
-            CT = self.round(1 - CT / K2 - 0.5 * tv / fY)
-            tv = self.round(1 - 0.5 * tv / fY / fR)
+            AG = 1 - AG / K1 - 0.5 * tv / fR
+            CT = 1 - CT / K2 - 0.5 * tv / fY
+            tv = 1 - 0.5 * tv / fY / fR
             dist = self.round(
                 -K1 * math.log(AG) - K2 * math.log(CT) - K3 * math.log(tv)
             )
