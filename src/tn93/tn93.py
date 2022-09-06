@@ -8,11 +8,12 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Wed 24 Aug 2022 04:45:16 PM EDT
+Last Modified: Tue 06 Sep 2022 04:46:51 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
 import copy
+import re
 import argparse
 import json
 import sys
@@ -28,6 +29,20 @@ def main(args):
     tn93 = TN93(show_counts=args.show_counts)
     fasta_file = args.input_file
     fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
+    if (
+        len(
+            [
+                x
+                for x in fasta_sequences
+                if len(str(x.seq)) != len(str(fasta_sequences[0].seq))
+            ]
+        )
+        > 0
+    ):
+        logging.error(
+            "Sequence lengths not identical - all sequences should be aligned to a common reference and should be the same length"
+        )
+        sys.exit(1)
     match_mode = args.match_mode
     final_distance = []
     for i in range(len(fasta_sequences) - 1):
@@ -62,6 +77,8 @@ class TN93(object):
             self.resolutionsCount,
         ) = self.get_constants()
         self.show_counts = show_counts
+        self.first_nongap = False
+        self.last_non_gap = False
 
     def tn93_distance(self, seq1, seq2, match_mode):
         try:  # If sequences are passed as SeqRecord objects
@@ -81,6 +98,7 @@ class TN93(object):
             logging.error(pairwise_counts[2])
             logging.error(pairwise_counts[3])
             logging.error(nucleotide_frequency)
+            logging.error(sum([sum(x) for x in pairwise_counts]))
         dist = 0
         total_non_gap = self.round(2 / sum(nucleotide_frequency))
         AG_counts = float(pairwise_counts[0][2] + pairwise_counts[2][0])
@@ -139,7 +157,18 @@ class TN93(object):
                 nucleotide_frequency[k] += pairwise_counts[j][k]
         return nucleotide_frequency
 
+    def find_terminal_gaps(self, seq1, seq2):
+        s1 = re.match(r"-*", seq1).end()
+        s2 = re.match(r"-*", seq2).end()
+        e1 = re.search(r"-*$", seq1).start()
+        e2 = re.search(r"-*$", seq2).start()
+        self.first_nongap = max(s1, s2)
+        self.last_nongap = min(e1, e2)
+        if self.show_counts:
+            logging.error(f"{self.first_nongap} {self.last_nongap}")
+
     def get_counts(self, seq1, seq2, match_mode):
+        self.find_terminal_gaps(seq1, seq2)
         if match_mode == "RESOLVE":
             pairwise_counts = self.get_counts_resolve(seq1, seq2)
         elif match_mode == "AVERAGE":
@@ -168,7 +197,7 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(length):
+        for p in range(self.first_nongap, self.last_nongap):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
@@ -227,7 +256,7 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(length):
+        for p in range(self.first_nongap, self.last_nongap):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
@@ -257,6 +286,8 @@ class TN93(object):
 
     def get_counts_gapmm(self, seq1, seq2):
         length = min(len(seq1), len(seq2))
+        if self.show_counts:
+            logging.error(length)
         pairwise_counts = [
             # A, C, G, T
             [0, 0, 0, 0],  # A
@@ -264,7 +295,7 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(length):
+        for p in range(self.first_nongap, self.last_nongap):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
@@ -313,7 +344,7 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(length):
+        for p in range(self.first_nongap, self.last_nongap):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
