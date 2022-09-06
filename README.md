@@ -1,6 +1,7 @@
 # Tamura-Nei Distance Calculation with Python
 
-![Python Package](https://github.com/CDCgov/tn93/actions/workflows/python-package.yml/badge.svg)
+![Unit Tests](https://github.com/CDCgov/tn93/actions/workflows/python-package.yml/badge.svg) ![Deployed Package](https://github.com/CDCgov/tn93/actions/workflows/python-publish.yml/badge.svg)
+
 
 ## Overview
 
