@@ -8,7 +8,7 @@ Title:test_tn93.py
 Description:
 Usage:
 Date Created: 2022-08-15 11:43
-Last Modified: Wed 17 Aug 2022 11:08:08 AM EDT
+Last Modified: Tue 06 Sep 2022 05:01:07 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -32,6 +32,8 @@ class TestTN93(unittest.TestCase):
             self.counts = json.load(json_file)
         with open("test/expected_distances.json", "r") as json_file:
             self.distances = json.load(json_file)
+        self.tn93.first_nongap = 0
+        self.tn93.last_nongap = len(str(self.test_seqs["unambig_1"].seq))
 
     def test_skip_unambig(self):
         pairwise_counts = self.tn93.get_counts_skip(
@@ -89,7 +91,9 @@ class TestTN93(unittest.TestCase):
         self.tn93.get_counts_skip = Mock()
         mode_value = "SKIP"
         self.tn93.get_counts(
-            self.test_seqs["unambig_1"], self.test_seqs["unambig_2"], mode_value
+            str(self.test_seqs["unambig_1"]),
+            str(self.test_seqs["unambig_2"]),
+            mode_value,
         )
         self.tn93.get_counts_skip.assert_called_once()
 
@@ -97,7 +101,9 @@ class TestTN93(unittest.TestCase):
         self.tn93.get_counts_gapmm = Mock()
         mode_value = "GAPMM"
         self.tn93.get_counts(
-            self.test_seqs["unambig_1"], self.test_seqs["unambig_2"], mode_value
+            str(self.test_seqs["unambig_1"]),
+            str(self.test_seqs["unambig_2"]),
+            mode_value,
         )
         self.tn93.get_counts_gapmm.assert_called_once()
         pass
@@ -106,7 +112,9 @@ class TestTN93(unittest.TestCase):
         self.tn93.get_counts_average = Mock()
         mode_value = "AVERAGE"
         self.tn93.get_counts(
-            self.test_seqs["unambig_1"], self.test_seqs["unambig_2"], mode_value
+            str(self.test_seqs["unambig_1"]),
+            str(self.test_seqs["unambig_2"]),
+            mode_value,
         )
         self.tn93.get_counts_average.assert_called_once()
         pass
@@ -115,7 +123,9 @@ class TestTN93(unittest.TestCase):
         self.tn93.get_counts_resolve = Mock()
         mode_value = "RESOLVE"
         self.tn93.get_counts(
-            self.test_seqs["unambig_1"], self.test_seqs["unambig_2"], mode_value
+            str(self.test_seqs["unambig_1"]),
+            str(self.test_seqs["unambig_2"]),
+            mode_value,
         )
         self.tn93.get_counts_resolve.assert_called_once()
         pass
@@ -124,7 +134,9 @@ class TestTN93(unittest.TestCase):
         mode_value = "UNKNOWN"
         with self.assertRaises(SystemExit) as cm:
             self.tn93.get_counts(
-                self.test_seqs["unambig_1"], self.test_seqs["unambig_2"], mode_value
+                str(self.test_seqs["unambig_1"]),
+                str(self.test_seqs["unambig_2"]),
+                mode_value,
             )
             self.assertEqual(cm.exception_code, 1)
 
