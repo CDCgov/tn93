@@ -8,11 +8,12 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Tue 06 Sep 2022 06:39:36 PM EDT
+Last Modified: Thu 15 Sep 2022 10:13:08 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
 import copy
+import csv
 import re
 import argparse
 import json
@@ -26,7 +27,12 @@ import numpy as np
 def main(args):
     parser = setup_parser()
     args = parser.parse_args(args)
-    tn93 = TN93(show_counts=args.show_counts)
+    tn93 = TN93(
+        show_counts=args.show_counts,
+        ignore_gaps=args.ignore_terminal_gaps,
+        json_output=args.json_output,
+        max_ambig_fraction=args.max_ambig_fraction,
+    )
     fasta_file = args.input_file
     fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
     if (
@@ -47,49 +53,111 @@ def main(args):
     final_distance = []
     for i in range(len(fasta_sequences) - 1):
         for j in range(i + 1, len(fasta_sequences)):
-            final_distance += [
-                {
-                    "ID1": fasta_sequences[i].id,
-                    "ID2": fasta_sequences[j].id,
-                    "Distance": tn93.tn93_distance(
-                        fasta_sequences[i], fasta_sequences[j], match_mode
-                    ),
-                }
-            ]
+            dist_value = tn93.tn93_distance(
+                fasta_sequences[i], fasta_sequences[j], match_mode
+            )
+            if not args.json_output:
+                dist_holder = dist_value.split(",")
+            final_distance += [dist_value if args.json_output else dist_holder]
     with open(args.output, "w") as output_file:
-        json.dump(final_distance, output_file)
+        if args.json_output:
+            json.dump(final_distance, output_file)
+        else:
+            writer = csv.writer(output_file)
+            writer.writerow(["ID1", "ID2", "Distance"])
+            writer.writerows(final_distance)
 
 
 def setup_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_file", action="store", required=True)
-    parser.add_argument("-m", "--match_mode", action="store", required=True)
-    parser.add_argument("-o", "--output", action="store", required=True)
-    parser.add_argument("-c", "--show_counts", action="store_true", default=False)
+    parser.add_argument(
+        "-i",
+        "--input_file",
+        action="store",
+        required=True,
+        help="Path to the input fasta file",
+    )
+    parser.add_argument(
+        "-m",
+        "--match_mode",
+        action="store",
+        required=True,
+        help="""
+        How to handle ambiguities. This can be one of four options:
+        average - Averages the possible nucleotide values for each ambiguity in a sequence;
+        resolve - Tries to resolve ambiguities;
+        skip - Ignores gaps and ambiguities;
+        gapmm - Treats gaps in only one sequence as 'N's;
+        """,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        action="store",
+        required=True,
+        help="The name of the output file to create",
+    )
+    # parser.add_argument("-g", "--max_ambig_fraction", action="store", required=False, default=1.0, help="Sequences that have proportions of ambiguities lower than this value will be resolved, otherwise they will be averaged (Default: 1.0)")
+    parser.add_argument(
+        "-c",
+        "--show_counts",
+        action="store_true",
+        default=False,
+        help="Show counts and other debugging information (Default: False)",
+    )
+    parser.add_argument(
+        "-n",
+        "--ignore_terminal_gaps",
+        action="store_true",
+        default=False,
+        help="Should gaps at the beginning and end of a sequence be ignored (GAPMM only)? (Default: False)",
+    )
+    parser.add_argument(
+        "-j",
+        "--json_output",
+        action="store_true",
+        default=False,
+        help="Should the output be in JSON format? (Default: False)",
+    )
     return parser
 
 
 class TN93(object):
-    def __init__(self, show_counts=False):
+    def __init__(
+        self,
+        show_counts=False,
+        ignore_gaps=False,
+        json_output=False,
+        max_ambig_fraction=1.0,
+    ):
         (
             self.map_character,
             self.resolutions,
             self.resolutionsCount,
         ) = self.get_constants()
         self.show_counts = show_counts
+        self.ignore_gaps = ignore_gaps
+        self.json_output = json_output
+        self.max_ambig_fraction = max_ambig_fraction
         self.first_nongap = False
         self.last_non_gap = False
 
     def tn93_distance(self, seq1, seq2, match_mode):
         try:  # If sequences are passed as SeqRecord objects
             pairwise_counts = self.get_counts(str(seq1.seq), str(seq2.seq), match_mode)
+            seq_ids = [seq1.id, seq2.id]
         except AttributeError:  # If sequences are passed as strings
             pairwise_counts = self.get_counts(seq1, seq2, match_mode)
+            seq_ids = [1, 2]
         nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
         dist = self.get_distance(pairwise_counts, nucleotide_frequency)
         if self.show_counts:
             logging.error(dist)
-        return dist
+        if self.json_output:
+            output = {"ID1": seq_ids[0], "ID2": seq_ids[1], "Distance": dist}
+        else:
+            output = f"{seq_ids[0]},{seq_ids[1]},{dist}"
+        return output
 
     def get_distance(self, pairwise_counts, nucleotide_frequency):
         if self.show_counts:
@@ -162,19 +230,21 @@ class TN93(object):
         e1 = re.search(r"-*$", seq1).start()
         e2 = re.search(r"-*$", seq2).start()
         self.first_nongap = max(s1, s2)
-        self.last_nongap = min(e1, e2)
+        self.last_nongap = min(e1, e2) - 1
         if self.show_counts:
-            logging.error(f"{self.first_nongap} {self.last_nongap}")
+            logging.error(
+                f"{self.first_nongap}-{seq1[self.first_nongap]},{seq2[self.first_nongap]} {self.last_nongap}-{seq1[self.last_nongap]},{seq2[self.last_nongap]}"
+            )
 
     def get_counts(self, seq1, seq2, match_mode):
         self.find_terminal_gaps(seq1, seq2)
-        if match_mode == "RESOLVE":
+        if match_mode.upper() == "RESOLVE":
             pairwise_counts = self.get_counts_resolve(seq1, seq2)
-        elif match_mode == "AVERAGE":
+        elif match_mode.upper() == "AVERAGE":
             pairwise_counts = self.get_counts_average(seq1, seq2)
-        elif match_mode == "GAPMM":
+        elif match_mode.upper() == "GAPMM":
             pairwise_counts = self.get_counts_gapmm(seq1, seq2)
-        elif match_mode == "SKIP":
+        elif match_mode.upper() == "SKIP":
             pairwise_counts = self.get_counts_skip(seq1, seq2)
         else:
             logging.error(f"Match mode {match_mode} is not recognized")
@@ -196,10 +266,12 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(self.first_nongap, self.last_nongap):
+        for p in range(0, length):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
+                if self.show_counts and nuc1 == 3 and nuc2 == 1:
+                    logging.error(f"{p} is TC")
                 pairwise_counts[nuc1][nuc2] += 1
             else:
                 if nuc1 == 17 and nuc2 == 17:
@@ -255,7 +327,7 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(self.first_nongap, self.last_nongap):
+        for p in range(0, length):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
@@ -285,8 +357,6 @@ class TN93(object):
 
     def get_counts_gapmm(self, seq1, seq2):
         length = min(len(seq1), len(seq2))
-        if self.show_counts:
-            logging.error(length)
         pairwise_counts = [
             # A, C, G, T
             [0, 0, 0, 0],  # A
@@ -294,7 +364,9 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(self.first_nongap, self.last_nongap):
+        start = self.first_nongap if self.ignore_gaps else 0
+        end = self.last_nongap if self.ignore_gaps else length
+        for p in range(start, end):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
@@ -343,7 +415,7 @@ class TN93(object):
             [0, 0, 0, 0],  # G
             [0, 0, 0, 0],  # T
         ]
-        for p in range(self.first_nongap, self.last_nongap):
+        for p in range(0, length):
             nuc1 = self.map_character[ord(seq1[p])]
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
