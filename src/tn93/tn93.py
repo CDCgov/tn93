@@ -8,24 +8,25 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Thu 15 Sep 2022 10:13:08 PM EDT
+Last Modified: Thu 22 Sep 2022 05:26:27 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
 import copy
 import csv
 import re
-import argparse
+import argparser
 import json
 import sys
 import logging
 import math
+from itertools import chain
 from Bio import SeqIO
 import numpy as np
 
 
 def main(args):
-    parser = setup_parser()
+    parser = argparser.setup_parser()
     args = parser.parse_args(args)
     tn93 = TN93(
         show_counts=args.show_counts,
@@ -66,60 +67,6 @@ def main(args):
             writer = csv.writer(output_file)
             writer.writerow(["ID1", "ID2", "Distance"])
             writer.writerows(final_distance)
-
-
-def setup_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i",
-        "--input_file",
-        action="store",
-        required=True,
-        help="Path to the input fasta file",
-    )
-    parser.add_argument(
-        "-m",
-        "--match_mode",
-        action="store",
-        required=True,
-        help="""
-        How to handle ambiguities. This can be one of four options:
-        average - Averages the possible nucleotide values for each ambiguity in a sequence;
-        resolve - Tries to resolve ambiguities;
-        skip - Ignores gaps and ambiguities;
-        gapmm - Treats gaps in only one sequence as 'N's;
-        """,
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        action="store",
-        required=True,
-        help="The name of the output file to create",
-    )
-    # parser.add_argument("-g", "--max_ambig_fraction", action="store", required=False, default=1.0, help="Sequences that have proportions of ambiguities lower than this value will be resolved, otherwise they will be averaged (Default: 1.0)")
-    parser.add_argument(
-        "-c",
-        "--show_counts",
-        action="store_true",
-        default=False,
-        help="Show counts and other debugging information (Default: False)",
-    )
-    parser.add_argument(
-        "-n",
-        "--ignore_terminal_gaps",
-        action="store_true",
-        default=False,
-        help="Should gaps at the beginning and end of a sequence be ignored (GAPMM only)? (Default: False)",
-    )
-    parser.add_argument(
-        "-j",
-        "--json_output",
-        action="store_true",
-        default=False,
-        help="Should the output be in JSON format? (Default: False)",
-    )
-    return parser
 
 
 class TN93(object):
@@ -166,7 +113,7 @@ class TN93(object):
             logging.error(pairwise_counts[2])
             logging.error(pairwise_counts[3])
             logging.error(nucleotide_frequency)
-            logging.error(sum([sum(x) for x in pairwise_counts]))
+            logging.error(sum(nucleotide_frequency) / 2)
         dist = 0
         total_non_gap = 2 / sum(nucleotide_frequency)
         AG_counts = float(pairwise_counts[0][2] + pairwise_counts[2][0])
@@ -253,11 +200,12 @@ class TN93(object):
 
     def round(self, number):
         val = np.format_float_positional(
-            number, precision=4, unique=False, fractional=False, trim="k"
+            number, precision=6, unique=False, fractional=False, trim="k"
         )
         return float(val)
 
     def get_counts_resolve(self, seq1, seq2):
+        all_pairwise_count_arrays = {}
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -316,9 +264,20 @@ class TN93(object):
                                 for k in range(4):
                                     if self.resolutions[nuc2][k]:
                                         pairwise_counts[j][k] += norm
+            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+        if self.show_counts:
+            count_holder = []
+            for k in all_pairwise_count_arrays.keys():
+                count_line = list(chain.from_iterable(all_pairwise_count_arrays[k]))
+                final_line = [int(k)] + count_line
+                count_holder += [final_line]
+            with open("python_resolve_counts.csv", "w") as cf:
+                writer = csv.writer(cf)
+                writer.writerows(count_holder)
         return pairwise_counts
 
     def get_counts_average(self, seq1, seq2):
+        all_pairwise_count_arrays = {}
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -353,9 +312,20 @@ class TN93(object):
                                 for k in range(4):
                                     if self.resolutions[nuc2][k]:
                                         pairwise_counts[j][k] += norm
+            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+        if self.show_counts:
+            count_holder = []
+            for k in all_pairwise_count_arrays.keys():
+                count_line = list(chain.from_iterable(all_pairwise_count_arrays[k]))
+                final_line = [int(k)] + count_line
+                count_holder += [final_line]
+            with open("python_avg_counts.csv", "w") as cf:
+                writer = csv.writer(cf)
+                writer.writerows(count_holder)
         return pairwise_counts
 
     def get_counts_gapmm(self, seq1, seq2):
+        all_pairwise_count_arrays = {}
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -401,6 +371,16 @@ class TN93(object):
                                     for k in range(4):
                                         if self.resolutions[nuc2][k]:
                                             pairwise_counts[j][k] += norm
+            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+        if self.show_counts:
+            count_holder = []
+            for k in all_pairwise_count_arrays.keys():
+                count_line = list(chain.from_iterable(all_pairwise_count_arrays[k]))
+                final_line = [int(k)] + count_line
+                count_holder += [final_line]
+            with open("python_gapmm_counts.csv", "w") as cf:
+                writer = csv.writer(cf)
+                writer.writerows(count_holder)
         return pairwise_counts
 
     def get_counts_skip(self, seq1, seq2):
@@ -420,7 +400,17 @@ class TN93(object):
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
                 pairwise_counts[nuc1][nuc2] += 1
-            all_pairwise_count_arrays[p] = copy.deepcopy(pairwise_counts)
+            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+        if self.show_counts:
+            count_holder = []
+            for k in all_pairwise_count_arrays.keys():
+                count_holder += [p] + [
+                    list(chain.from_iterable(all_pairwise_count_arrays[k]))
+                ]
+            with open("python_skip_counts.csv", "w") as cf:
+                writer = csv.writer(cf)
+                writer.writerows(count_holder)
+
         return pairwise_counts
 
     def get_constants(self):
