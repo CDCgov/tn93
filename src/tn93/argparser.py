@@ -8,7 +8,7 @@ Title: argerparser.py
 Description: argument parser for tn93
 Usage: imported by tn93
 Date Created: 2022-09-21 12:15
-Last Modified: Thu 22 Sep 2022 05:20:20 PM EDT
+Last Modified: Fri 23 Sep 2022 05:12:23 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -50,14 +50,14 @@ def setup_parser():
         action="store",
         required=False,
         default=1.0,
-        help="Sequences that have proportions of ambiguities lower than this value will be resolved, otherwise they will be averaged (Default: 1.0)",
+        help="Sequences that have proportions of ambiguities lower than this value will be resolved, otherwise they will be averaged (RESOLVE only) (Default: 1.0)",
     )
     parser.add_argument(
         "-c",
         "--show_counts",
         action="store_true",
         default=False,
-        help="Show counts and other debugging information (Default: False)",
+        help="Show counts and other debugging information, produces CSV file with pairwise counts for each non-gap nucleotide (Default: False)",
     )
     parser.add_argument(
         "-n",

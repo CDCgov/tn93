@@ -8,21 +8,21 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Thu 22 Sep 2022 05:26:27 PM EDT
+Last Modified: Fri 23 Sep 2022 06:31:43 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
 import copy
 import csv
-import re
-import argparser
 import json
-import sys
 import logging
 import math
+import re
+import sys
 from itertools import chain
 from Bio import SeqIO
 import numpy as np
+import argparser
 
 
 def main(args):
@@ -183,10 +183,19 @@ class TN93(object):
                 f"{self.first_nongap}-{seq1[self.first_nongap]},{seq2[self.first_nongap]} {self.last_nongap}-{seq1[self.last_nongap]},{seq2[self.last_nongap]}"
             )
 
+    def ambig_fraction_too_high(self, seq):
+        ambig_count = len([x for x in seq if x not in ["A", "C", "G", "T", "U", "-"]])
+        if (ambig_count / len(seq)) > self.max_ambig_fraction:
+            return True
+        return False
+
     def get_counts(self, seq1, seq2, match_mode):
         self.find_terminal_gaps(seq1, seq2)
         if match_mode.upper() == "RESOLVE":
-            pairwise_counts = self.get_counts_resolve(seq1, seq2)
+            if self.ambig_fraction_too_high(seq1) or self.ambig_fraction_too_high(seq2):
+                pairwise_counts = self.get_counts_average(seq1, seq2)
+            else:
+                pairwise_counts = self.get_counts_resolve(seq1, seq2)
         elif match_mode.upper() == "AVERAGE":
             pairwise_counts = self.get_counts_average(seq1, seq2)
         elif match_mode.upper() == "GAPMM":

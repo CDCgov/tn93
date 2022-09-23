@@ -1,10 +1,10 @@
 {
-"ambig_skip":    0.01088,
-"ambig_gapmm":   0.01561,
-"ambig_average": 0.01561,
-"ambig_resolve": 0.01148,
-"unambig_skip": 0.0108,
-"unambig_gapmm": 0.0108,
-"unambig_average": 0.0108,
-"unambig_resolve": 0.0108
+"ambig_skip":    0.0108767,
+"ambig_gapmm":   0.0156093,
+"ambig_average": 0.0156093,
+"ambig_resolve": 0.0114789,
+"unambig_skip": 0.010803,
+"unambig_gapmm": 0.010803,
+"unambig_average": 0.010803,
+"unambig_resolve": 0.010803
 }
