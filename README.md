@@ -5,7 +5,7 @@
 
 ## Overview
 
-This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation. When provided with two sequences to compare, this software returns a distance value between 0 and 1 using the Tamura-Nei nucleotide substitution model. See  [Estimation of the number of nucleotide substitutions in the control region of mitochondrial DNA in humans and chimpanzees](https://pubmed.ncbi.nlm.nih.gov/8336541/) and [NOTES](https://github.com/CDCgov/tn93/blob/main/NOTES.md) for more information on the algorithm. This software has been developed by the Molecular Epidemiology and Bioinformatics Team in the Division of HIV/AIDS Prevention, NCHHSTP.
+This repository contains a Python implementation of the Tamura-Nei (TN93) distance calculation. When provided with two sequences to compare, this software returns a distance value between 0 and 1 using the Tamura-Nei nucleotide substitution model. See  [Estimation of the number of nucleotide substitutions in the control region of mitochondrial DNA in humans and chimpanzees](https://pubmed.ncbi.nlm.nih.gov/8336541/) for more information on the algorithm. This software has been developed by the Molecular Epidemiology and Bioinformatics Team in the Division of HIV/AIDS Prevention, NCHHSTP.
 
 ## Usage
 
@@ -34,12 +34,53 @@ Alternatively, the module can be run from the command line and provided with a s
 python tn93.py --input_file example_seqs.fasta --match_mode RESOLVE --output example_seqs_resolve_distance.json
 ```
 
+By default, the software produces distances in the form
+```
+ID1,ID2,Distance
+```
+
+Selecting JSON output produces distances in the form
+```
+{"ID1": ID1, "ID2": ID2, "Distance": Distance}
+```
+
 There are four distinct match modes:
 
 * SKIP, which ignores ambiguous positions
 * GAPMM, which treats gaps appearing in only one sequence as mismatches
 * AVERAGE, which takes the average of the possible resolution values
 * RESOLVE, which tries to resolve the ambiguity to a single nucleotide, averages if that fails
+
+
+```
+usage: tn93.py [-h] -i INPUT_FILE -m MATCH_MODE -o OUTPUT
+               [-g MAX_AMBIG_FRACTION] [-v] [-n] [-j]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT_FILE, --input_file INPUT_FILE
+                        Path to the input fasta file
+  -m MATCH_MODE, --match_mode MATCH_MODE
+                        How to handle ambiguities. This can be one of four
+                        options: average - Averages the possible nucleotide
+                        values for each ambiguity in a sequence; resolve -
+                        Tries to resolve ambiguities; skip - Ignores gaps and
+                        ambiguities; gapmm - Treats gaps in only one sequence
+                        as 'N's;
+  -o OUTPUT, --output OUTPUT
+                        The name of the output file to create
+  -g MAX_AMBIG_FRACTION, --max_ambig_fraction MAX_AMBIG_FRACTION
+                        Sequences that have proportions of ambiguities lower
+                        than this value will be resolved, otherwise they will
+                        be averaged (RESOLVE only) (Default: 1.0)
+  -v, --verbose         Verbosity, One copy prints intermediate values and
+                        final counts, two copies produces a CSV file with
+                        pairwise counts for each non-gap nucleotide
+  -n, --ignore_terminal_gaps
+                        Should gaps at the beginning and end of a sequence be
+                        ignored (GAPMM only)? (Default: False)
+  -j, --json_output     Should the output be in JSON format? (Default: False)
+```
 
 ## Related documents
 
