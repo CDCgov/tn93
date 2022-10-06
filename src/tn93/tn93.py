@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Thu 29 Sep 2022 10:54:49 AM EDT
+Last Modified: Thu 06 Oct 2022 02:29:25 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -497,7 +497,6 @@ class TN93(object):
             1.0,  # U
             1.0 / 2.0,  # R
             1.0 / 2.0,  # Y
-            1.0 / 2.0,  # S
             1.0 / 2.0,  # S
             1.0 / 2.0,  # W
             1.0 / 2.0,  # K
