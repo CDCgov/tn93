@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Thu 20 Oct 2022 12:42:56 PM EDT
+Last Modified: Thu 20 Oct 2022 12:45:23 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -24,7 +24,7 @@ import sys
 from itertools import chain
 from Bio import SeqIO
 import numpy as np
-import tn93.argparser
+import tn93.argparser as argparser
 
 
 def main(args):
