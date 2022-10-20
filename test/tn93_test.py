@@ -8,7 +8,7 @@ Title:test_tn93.py
 Description:
 Usage:
 Date Created: 2022-08-15 11:43
-Last Modified: Fri 23 Sep 2022 06:36:14 PM EDT
+Last Modified: Thu 20 Oct 2022 01:00:46 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -70,6 +70,7 @@ class TestTN93(unittest.TestCase):
         )
         self.assertEqual(pairwise_counts, self.counts["ambig_skip"])
 
+    """
     def test_gapmm_ambig(self):
         pairwise_counts = self.tn93.get_counts_gapmm(
             self.test_seqs["ambig_1"], self.test_seqs["ambig_2"]
@@ -81,6 +82,7 @@ class TestTN93(unittest.TestCase):
             self.test_seqs["ambig_1"], self.test_seqs["ambig_2"]
         )
         self.assertEqual(pairwise_counts, self.counts["ambig_average"])
+    """
 
     def test_resolve_ambig(self):
         pairwise_counts = self.tn93.get_counts_resolve(
@@ -150,6 +152,7 @@ class TestTN93(unittest.TestCase):
         distance = self.tn93.get_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["ambig_skip"])
 
+    """
     def test_get_distance_ambig_gapmm(self):
         pairwise = self.tn93.get_counts_gapmm(
             self.test_seqs["ambig_1"], self.test_seqs["ambig_2"]
@@ -165,6 +168,7 @@ class TestTN93(unittest.TestCase):
         nuc_freq = self.tn93.get_nucleotide_frequency(pairwise)
         distance = self.tn93.get_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["ambig_average"])
+    """
 
     def test_get_distance_ambig_resolve(self):
         pairwise = self.tn93.get_counts_resolve(
