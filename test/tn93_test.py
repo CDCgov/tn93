@@ -8,7 +8,7 @@ Title:test_tn93.py
 Description:
 Usage:
 Date Created: 2022-08-15 11:43
-Last Modified: Thu 20 Oct 2022 01:00:46 PM EDT
+Last Modified: Thu 03 Nov 2022 01:33:42 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -149,7 +149,7 @@ class TestTN93(unittest.TestCase):
             self.test_seqs["ambig_1"], self.test_seqs["ambig_2"]
         )
         nuc_freq = self.tn93.get_nucleotide_frequency(pairwise)
-        distance = self.tn93.get_distance(pairwise, nuc_freq)
+        distance = self.tn93.calculate_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["ambig_skip"])
 
     """
@@ -175,7 +175,7 @@ class TestTN93(unittest.TestCase):
             self.test_seqs["ambig_1"], self.test_seqs["ambig_2"]
         )
         nuc_freq = self.tn93.get_nucleotide_frequency(pairwise)
-        distance = self.tn93.get_distance(pairwise, nuc_freq)
+        distance = self.tn93.calculate_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["ambig_resolve"])
 
     def test_get_distance_unambig_skip(self):
@@ -183,7 +183,7 @@ class TestTN93(unittest.TestCase):
             self.test_seqs["unambig_1"], self.test_seqs["unambig_2"]
         )
         nuc_freq = self.tn93.get_nucleotide_frequency(pairwise)
-        distance = self.tn93.get_distance(pairwise, nuc_freq)
+        distance = self.tn93.calculate_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["unambig_skip"])
 
     def test_get_distance_unambig_gapmm(self):
@@ -191,7 +191,7 @@ class TestTN93(unittest.TestCase):
             self.test_seqs["unambig_1"], self.test_seqs["unambig_2"]
         )
         nuc_freq = self.tn93.get_nucleotide_frequency(pairwise)
-        distance = self.tn93.get_distance(pairwise, nuc_freq)
+        distance = self.tn93.calculate_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["unambig_gapmm"])
 
     def test_get_distance_unambig_average(self):
@@ -199,7 +199,7 @@ class TestTN93(unittest.TestCase):
             self.test_seqs["unambig_1"], self.test_seqs["unambig_2"]
         )
         nuc_freq = self.tn93.get_nucleotide_frequency(pairwise)
-        distance = self.tn93.get_distance(pairwise, nuc_freq)
+        distance = self.tn93.calculate_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["unambig_average"])
 
     def test_get_distance_unambig_resolve(self):
@@ -207,7 +207,7 @@ class TestTN93(unittest.TestCase):
             self.test_seqs["unambig_1"], self.test_seqs["unambig_2"]
         )
         nuc_freq = self.tn93.get_nucleotide_frequency(pairwise)
-        distance = self.tn93.get_distance(pairwise, nuc_freq)
+        distance = self.tn93.calculate_distance(pairwise, nuc_freq)
         self.assertEqual(distance, self.distances["unambig_resolve"])
 
     def test_ambig_fraction_not_too_high(self):

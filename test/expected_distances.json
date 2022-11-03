@@ -1,7 +1,7 @@
 {
 "ambig_skip":    0.0108767,
-"ambig_gapmm":   0.0156093,
-"ambig_average": 0.0156093,
+"ambig_gapmm":   0.0151661,
+"ambig_average": 0.0151661,
 "ambig_resolve": 0.0114789,
 "unambig_skip": 0.010803,
 "unambig_gapmm": 0.010803,

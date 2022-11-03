@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Thu 20 Oct 2022 12:49:01 PM EDT
+Last Modified: Thu 03 Nov 2022 03:02:13 PM EDT
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -35,6 +35,7 @@ def main(args):
         ignore_gaps=args.ignore_terminal_gaps,
         json_output=args.json_output,
         max_ambig_fraction=args.max_ambig_fraction,
+        minimum_overlap=args.minimum_overlap,
     )
     fasta_file = args.input_file
     fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
@@ -116,6 +117,13 @@ def setup_parser():
         help="Verbosity, One copy prints intermediate values and final counts, two copies produces a CSV file with pairwise counts for each non-gap nucleotide",
     )
     parser.add_argument(
+        "-l",
+        "--minimum_overlap",
+        action="store",
+        default=500,
+        help="What's the minimum amount of overlapping sequence to make a comparison? (Default: 500)",
+    )
+    parser.add_argument(
         "-n",
         "--ignore_terminal_gaps",
         action="store_true",
@@ -139,6 +147,7 @@ class TN93(object):
         ignore_gaps=False,
         json_output=False,
         max_ambig_fraction=1.0,
+        minimum_overlap=500,
     ):
         (
             self.map_character,
@@ -148,19 +157,38 @@ class TN93(object):
         self.verbose = verbose
         self.ignore_gaps = ignore_gaps
         self.json_output = json_output
-        self.max_ambig_fraction = max_ambig_fraction
+        self.max_ambig_fraction = float(max_ambig_fraction)
+        self.minimum_overlap = int(minimum_overlap)
         self.first_nongap = False
         self.last_non_gap = False
 
     def tn93_distance(self, seq1, seq2, match_mode):
         try:  # If sequences are passed as SeqRecord objects
-            pairwise_counts = self.get_counts(str(seq1.seq), str(seq2.seq), match_mode)
             seq_ids = [seq1.id, seq2.id]
+            if self.get_overlap(str(seq1.seq), str(seq2.seq)) < self.minimum_overlap:
+                if self.verbose > 0:
+                    logging.error(
+                        f"Overlap of only {self.get_overlap(seq1, seq2)}, Skipping"
+                    )
+                dist = "-"
+            else:
+                pairwise_counts = self.get_counts(
+                    str(seq1.seq), str(seq2.seq), match_mode
+                )
+                nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
+                dist = self.calculate_distance(pairwise_counts, nucleotide_frequency)
         except AttributeError:  # If sequences are passed as strings
-            pairwise_counts = self.get_counts(seq1, seq2, match_mode)
             seq_ids = [1, 2]
-        nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
-        dist = self.get_distance(pairwise_counts, nucleotide_frequency)
+            if self.get_overlap(str(seq1.seq), str(seq2.seq)) < self.minimum_overlap:
+                if self.verbose > 0:
+                    logging.error(
+                        f"Overlap of only {self.get_overlap(seq1, seq2)}, Skipping"
+                    )
+                dist = "-"
+            else:
+                pairwise_counts = self.get_counts(seq1, seq2, match_mode)
+                nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
+                dist = self.calculate_distance(pairwise_counts, nucleotide_frequency)
         if self.verbose > 0:
             logging.error(dist)
         if self.json_output:
@@ -169,7 +197,7 @@ class TN93(object):
             output = f"{seq_ids[0]},{seq_ids[1]},{dist}"
         return output
 
-    def get_distance(self, pairwise_counts, nucleotide_frequency):
+    def calculate_distance(self, pairwise_counts, nucleotide_frequency):
         if self.verbose > 0:
             logging.error(pairwise_counts[0])
             logging.error(pairwise_counts[1])
@@ -251,6 +279,9 @@ class TN93(object):
         if (ambig_count / len(seq)) > self.max_ambig_fraction:
             return True
         return False
+
+    def get_overlap(self, seq1, seq2):
+        return len([x for x in range(len(seq1)) if seq1[x] != "-" and seq2[x] != "-"])
 
     def get_counts(self, seq1, seq2, match_mode):
         self.find_terminal_gaps(seq1, seq2)
