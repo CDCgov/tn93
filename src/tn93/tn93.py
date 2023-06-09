@@ -39,16 +39,7 @@ def main(args):
     )
     fasta_file = args.input_file
     fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
-    if (
-        len(
-            [
-                x
-                for x in fasta_sequences
-                if len(str(x.seq)) != len(str(fasta_sequences[0].seq))
-            ]
-        )
-        > 0
-    ):
+    if len([x for x in fasta_sequences if len(str(x.seq)) != len(str(fasta_sequences[0].seq))]) > 0:
         logging.error(
             "Sequence lengths not identical - all sequences should be aligned to a common reference and should be the same length"
         )
@@ -57,9 +48,7 @@ def main(args):
     final_distance = []
     for i in range(len(fasta_sequences) - 1):
         for j in range(i + 1, len(fasta_sequences)):
-            dist_value = tn93.tn93_distance(
-                fasta_sequences[i], fasta_sequences[j], match_mode
-            )
+            dist_value = tn93.tn93_distance(fasta_sequences[i], fasta_sequences[j], match_mode)
             if not args.json_output:
                 dist_holder = dist_value.split(",")
             final_distance += [dist_value if args.json_output else dist_holder]
@@ -167,23 +156,17 @@ class TN93(object):
             seq_ids = [seq1.id, seq2.id]
             if self.get_overlap(str(seq1.seq), str(seq2.seq)) < self.minimum_overlap:
                 if self.verbose > 0:
-                    logging.error(
-                        f"Overlap of only {self.get_overlap(seq1, seq2)}, Skipping"
-                    )
+                    logging.error(f"Overlap of only {self.get_overlap(seq1, seq2)}, Skipping")
                 dist = "-"
             else:
-                pairwise_counts = self.get_counts(
-                    str(seq1.seq), str(seq2.seq), match_mode
-                )
+                pairwise_counts = self.get_counts(str(seq1.seq), str(seq2.seq), match_mode)
                 nucleotide_frequency = self.get_nucleotide_frequency(pairwise_counts)
                 dist = self.calculate_distance(pairwise_counts, nucleotide_frequency)
         except AttributeError:  # If sequences are passed as strings
             seq_ids = [1, 2]
             if self.get_overlap(str(seq1.seq), str(seq2.seq)) < self.minimum_overlap:
                 if self.verbose > 0:
-                    logging.error(
-                        f"Overlap of only {self.get_overlap(seq1, seq2)}, Skipping"
-                    )
+                    logging.error(f"Overlap of only {self.get_overlap(seq1, seq2)}, Skipping")
                 dist = "-"
             else:
                 pairwise_counts = self.get_counts(seq1, seq2, match_mode)
@@ -212,10 +195,7 @@ class TN93(object):
         CT_counts = float(pairwise_counts[1][3] + pairwise_counts[3][1])
         CT = CT_counts * total_non_gap
         matching = (
-            pairwise_counts[0][0]
-            + pairwise_counts[1][1]
-            + pairwise_counts[2][2]
-            + pairwise_counts[3][3]
+            pairwise_counts[0][0] + pairwise_counts[1][1] + pairwise_counts[2][2] + pairwise_counts[3][3]
         ) * total_non_gap
         tv = 1 - (AG + CT + matching)
         if self.verbose > 0:
@@ -236,20 +216,14 @@ class TN93(object):
             fY = nucF[1] + nucF[3]
             K1 = 2 * nucF[0] * nucF[2] / fR
             K2 = 2 * nucF[1] * nucF[3] / fY
-            K3 = 2 * (
-                fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY
-            )
+            K3 = 2 * (fR * fY - nucF[0] * nucF[2] * fY / fR - nucF[1] * nucF[3] * fR / fY)
             AG = 1 - AG / K1 - 0.5 * tv / fR
             CT = 1 - CT / K2 - 0.5 * tv / fY
             tv = 1 - 0.5 * tv / fY / fR
-            dist = self.round(
-                -K1 * math.log(AG) - K2 * math.log(CT) - K3 * math.log(tv)
-            )
+            dist = self.round(-K1 * math.log(AG) - K2 * math.log(CT) - K3 * math.log(tv))
 
         if self.verbose > 0:
-            logging.error(
-                f"Finally: auxd={auxd} fR={fR} fY={fY} K1={K1} K2={K2} K3={K3} AG={AG} CT={CT} tv={tv}"
-            )
+            logging.error(f"Finally: auxd={auxd} fR={fR} fY={fY} K1={K1} K2={K2} K3={K3} AG={AG} CT={CT} tv={tv}")
             logging.error(f"dist={dist}")
 
         return self.round(dist) if dist > -0.0 else 0.0  # If it's really -0.0 return 0
@@ -302,9 +276,7 @@ class TN93(object):
         return pairwise_counts
 
     def round(self, number):
-        val = np.format_float_positional(
-            number, precision=6, unique=False, fractional=False, trim="k"
-        )
+        val = np.format_float_positional(number, precision=6, unique=False, fractional=False, trim="k")
         return float(val)
 
     def get_counts_resolve(self, seq1, seq2):
@@ -329,9 +301,7 @@ class TN93(object):
                     continue
                 elif nuc1 < 4:  # nuc1 is resolved, nuc2 is ambiguous
                     if self.resolutionsCount[nuc2] > 0:
-                        if self.resolutions[nuc2][
-                            nuc1
-                        ]:  # Resolve nuc2 to nuc1 if possible
+                        if self.resolutions[nuc2][nuc1]:  # Resolve nuc2 to nuc1 if possible
                             pairwise_counts[nuc1][nuc1] += 1
                             continue
                         for j in range(4):
@@ -339,9 +309,7 @@ class TN93(object):
                                 pairwise_counts[nuc1][j] += self.resolutionsCount[nuc2]
                 elif nuc2 < 4:  # nuc2 is resolved, nuc1 is ambiguous
                     if self.resolutionsCount[nuc1] > 0:
-                        if self.resolutions[nuc1][
-                            nuc2
-                        ]:  # Resolve nuc1 to nuc2 if possible
+                        if self.resolutions[nuc1][nuc2]:  # Resolve nuc1 to nuc2 if possible
                             pairwise_counts[nuc2][nuc2] += 1
                             continue
                         for j in range(4):
@@ -367,7 +335,8 @@ class TN93(object):
                                 for k in range(4):
                                     if self.resolutions[nuc2][k]:
                                         pairwise_counts[j][k] += norm
-            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+            if self.verbose > 1:
+                all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
         if self.verbose > 1:
             count_holder = []
             for k in all_pairwise_count_arrays.keys():
@@ -416,7 +385,8 @@ class TN93(object):
                                 for k in range(4):
                                     if self.resolutions[nuc2][k]:
                                         pairwise_counts[j][k] += norm
-            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+            if self.verbose > 1:
+                all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
         if self.verbose > 1:
             count_holder = []
             for k in all_pairwise_count_arrays.keys():
@@ -465,9 +435,7 @@ class TN93(object):
                         if self.resolutionsCount[nuc1] > 0:
                             for j in range(4):
                                 if self.resolutions[nuc1][j]:
-                                    pairwise_counts[j][nuc2] += self.resolutionsCount[
-                                        nuc1
-                                    ]
+                                    pairwise_counts[j][nuc2] += self.resolutionsCount[nuc1]
                     else:  # Both nuc1 and nuc2 are ambiguous
                         norm = self.resolutionsCount[nuc1] * self.resolutionsCount[nuc2]
                         if norm > 0.0:
@@ -476,7 +444,8 @@ class TN93(object):
                                     for k in range(4):
                                         if self.resolutions[nuc2][k]:
                                             pairwise_counts[j][k] += norm
-            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+            if self.verbose > 1:
+                all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
         if self.verbose > 1:
             count_holder = []
             for k in all_pairwise_count_arrays.keys():
@@ -490,9 +459,7 @@ class TN93(object):
         return pairwise_counts
 
     def get_counts_skip(self, seq1, seq2):
-        all_pairwise_count_arrays = (
-            {}
-        )  # This is for debugging the difference between impl
+        all_pairwise_count_arrays = {}  # This is for debugging the difference between impl
         length = min(len(seq1), len(seq2))
         pairwise_counts = [
             # A, C, G, T
@@ -506,13 +473,12 @@ class TN93(object):
             nuc2 = self.map_character[ord(seq2[p])]
             if nuc1 < 4 and nuc2 < 4:  # If neither nucleotide is ambiguous
                 pairwise_counts[nuc1][nuc2] += 1
-            all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
+            if self.verbose > 1:
+                all_pairwise_count_arrays[str(p)] = copy.deepcopy(pairwise_counts)
         if self.verbose > 1:
             count_holder = []
             for k in all_pairwise_count_arrays.keys():
-                count_holder += [p] + [
-                    list(chain.from_iterable(all_pairwise_count_arrays[k]))
-                ]
+                count_holder += [p] + [list(chain.from_iterable(all_pairwise_count_arrays[k]))]
             filename_slug = self.make_filename()
             with open(f"{filename_slug}_python_skip_counts.csv", "w") as cf:
                 writer = csv.writer(cf)
