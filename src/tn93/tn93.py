@@ -8,7 +8,7 @@ Title: tn93.py
 Description: Implementation of Tamura-Nei distance calculation for pair of HIV sequences
 Usage: Used by other software
 Date Created: 2022-08-09 18:11
-Last Modified: Thu 03 Nov 2022 03:02:13 PM EDT
+Last Modified: Thu 25 Jan 2024 01:46:44 PM EST
 Author: Reagan Kelly (ylb9@cdc.gov)
 """
 
@@ -40,9 +40,7 @@ def main(args):
     fasta_file = args.input_file
     fasta_sequences = [x for x in SeqIO.parse(fasta_file, format="fasta")]
     if len([x for x in fasta_sequences if len(str(x.seq)) != len(str(fasta_sequences[0].seq))]) > 0:
-        logging.error(
-            "Sequence lengths not identical - all sequences should be aligned to a common reference and should be the same length"
-        )
+        logging.error("Sequence lengths not identical - all sequences should be aligned to a common reference and should be the same length")
         sys.exit(1)
     match_mode = args.match_mode
     final_distance = []
@@ -194,9 +192,7 @@ class TN93(object):
         AG = AG_counts * total_non_gap
         CT_counts = float(pairwise_counts[1][3] + pairwise_counts[3][1])
         CT = CT_counts * total_non_gap
-        matching = (
-            pairwise_counts[0][0] + pairwise_counts[1][1] + pairwise_counts[2][2] + pairwise_counts[3][3]
-        ) * total_non_gap
+        matching = (pairwise_counts[0][0] + pairwise_counts[1][1] + pairwise_counts[2][2] + pairwise_counts[3][3]) * total_non_gap
         tv = 1 - (AG + CT + matching)
         if self.verbose > 0:
             logging.error(f"Initially: AG={AG} CT={CT} tv={tv}")
@@ -244,15 +240,45 @@ class TN93(object):
         self.first_nongap = max(s1, s2)
         self.last_nongap = min(e1, e2) - 1
         if self.verbose > 0:
-            logging.error(
-                f"{self.first_nongap}-{seq1[self.first_nongap]},{seq2[self.first_nongap]} {self.last_nongap}-{seq1[self.last_nongap]},{seq2[self.last_nongap]}"
-            )
+            logging.error(f"{self.first_nongap}-{seq1[self.first_nongap]},{seq2[self.first_nongap]} {self.last_nongap}-{seq1[self.last_nongap]},{seq2[self.last_nongap]}")
 
-    def ambig_fraction_too_high(self, seq):
-        ambig_count = len([x for x in seq if x not in ["A", "C", "G", "T", "U", "-"]])
-        if (ambig_count / len(seq)) > self.max_ambig_fraction:
-            return True
+    def can_resolve(self, nuc1, nuc2):
+        if nuc1 < 4 and nuc2 < 4:
+            return False
+        if nuc1 == 17 or nuc2 == 17:
+            return False
+        if nuc1 < 4:
+            if self.resolutions[nuc2][nuc1]:
+                return True
+            for j in range(4):
+                if self.resolutions[nuc2][j] and self.resolutions[nuc1][j]:
+                    return True
+        elif nuc2 < 4:
+            if self.resolutions[nuc1][nuc2]:
+                return True
+            for j in range(4):
+                if self.resolutions[nuc1][j] and self.resolutions[nuc2][j]:
+                    return True
+        else:
+            norm = self.resolutionsCount[nuc1] * self.resolutionsCount[nuc2]
+            if norm > 0.0:
+                for j in range(4):
+                    if self.resolutions[nuc1][j] and self.resolutions[nuc2][j]:
+                        return True
         return False
+
+    def ambig_fraction_too_high(self, seq1, seq2):
+        ambig_count = 0
+        total_non_gap = 0
+        scan_length = min(len(seq1), len(seq2))
+        for i in range(scan_length):
+            nuc1 = self.map_character[ord(seq1[i])]
+            nuc2 = self.map_character[ord(seq2[i])]
+            if self.can_resolve(nuc1, nuc2):
+                ambig_count += 1
+            if nuc1 != 17 and nuc2 != 17:
+                total_non_gap += 1
+        return total_non_gap * self.max_ambig_fraction <= ambig_count
 
     def get_overlap(self, seq1, seq2):
         return len([x for x in range(len(seq1)) if seq1[x] != "-" and seq2[x] != "-"])
@@ -260,7 +286,7 @@ class TN93(object):
     def get_counts(self, seq1, seq2, match_mode):
         self.find_terminal_gaps(seq1, seq2)
         if match_mode.upper() == "RESOLVE":
-            if self.ambig_fraction_too_high(seq1) or self.ambig_fraction_too_high(seq2):
+            if self.ambig_fraction_too_high(seq1, seq2):
                 pairwise_counts = self.get_counts_average(seq1, seq2)
             else:
                 pairwise_counts = self.get_counts_resolve(seq1, seq2)
