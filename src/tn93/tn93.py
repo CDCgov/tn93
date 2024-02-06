@@ -247,9 +247,11 @@ class TN93(object):
             return False
         if nuc1 == 17 or nuc2 == 17:
             return False
-        for j in range(4):
-            if self.resolutions[nuc1][j] and self.resolutions[nuc2][j]:
-                return True
+        if nuc1 > 4 and nuc2 > 4:
+            return True
+        # for j in range(4):
+        #     if self.resolutions[nuc1][j] and self.resolutions[nuc2][j]:
+        #         return True
         return False
 
     def ambig_fraction_too_high(self, seq1, seq2):
